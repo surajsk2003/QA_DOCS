@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Q&A</title>
+    {% load static %}
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<style>
+    /* General Body Styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f7f6;
+    color: #333;
+}
+
+/* Container to center the content */
+.container {
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 800px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Header Styling */
+h1 {
+    color: #2C3E50;
+    margin-bottom: 20px;
+}
+
+/* Form Styling */
+form {
+    margin-bottom: 20px;
+}
+
+input[type="file"] {
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 12px 24px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Question and Answer Section */
+#qa-section {
+    margin-top: 30px;
+    display: none;
+}
+
+#qa-section input[type="text"] {
+    width: 60%;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+#qa-section button {
+    margin-top: 10px;
+}
+
+#answer {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #27ae60;
+    font-weight: bold;
+}
+</style>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/upload">Upload</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Upload Document and Ask Questions</h1>
+
+        <!-- Document Upload Form -->
+        <form id="upload-form" action="{% url 'upload' %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" id="document" name="document" accept=".xlsx" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <!-- QA Section: Hidden Initially -->
+        <div id="qa-section" style="display:none;">
+            <input type="text" id="question" placeholder="Ask a question..." required>
+            <button id="ask-btn">Ask</button>
+            <p id="answer"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+
+    <script>
+        // Handling document upload
+        document.getElementById("upload-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+
+            fetch("{% url 'upload' %}", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById("qa-section").style.display = "block";  // Show QA section after successful upload
+                } else {
+                    console.log(data.error);
+                    alert("Upload failed: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.log(error.message);
+                alert("An error occurred: " + error.message);
+            });
+        });
+
+        // Handle asking a question via AJAX
+        const questionInput = document.getElementById('question');
+        const askBtn = document.getElementById('ask-btn');
+        const answerElement = document.getElementById('answer');
+
+        askBtn.addEventListener('click', function() {
+            const question = questionInput.value.trim();
+            if (question === "") return;
+
+            console.log("Client Question: " + question);  // Log the question sent by the client
+
+            fetch('/ask?question=' + encodeURIComponent(question))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.answer) {
+                        answerElement.textContent = data.answer;
+                        console.log("Server Response: " + data.answer);  // Log the server response
+                    } else {
+                        answerElement.textContent = "Sorry, I couldn't find an answer.";
+                    }
+                })
+                .catch(error => {
+                    console.error('Error asking question:', error);
+                    answerElement.textContent = "There was an error processing your request.";
+                });
+        });
+    </script>
+</body>
+</html>
