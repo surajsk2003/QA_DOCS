@@ -21,7 +21,7 @@ class QuestionAnswer(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="qa_pairs", verbose_name="Document")
     asked_at = models.DateTimeField(auto_now_add=True, verbose_name="Asked At")
     
-    def _str_(self):
+    def __str__(self):
         return f"Q: {self.question} | A: {self.answer}"
 
     class Meta:
